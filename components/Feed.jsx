@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import PromptCard from "./PromptCard";
 import { useSession } from "next-auth/react";
+import { set } from "mongoose";
 
 const PromptCardList = ({ data, handleTagClick }) => {
   return (
@@ -20,8 +21,24 @@ const Feed = () => {
 
   const { data: session } = useSession();
 
-  const handleSearchChange = (e) => {
-    return;
+  const handleSearchChange = async (e) => {
+    const search = e.target.value;
+    setSearchText(e.target.value);
+
+    try {
+      if (search === "") {
+        return;
+      }
+
+      const res = await fetch(
+        `/api/users/${session?.user.id}/posts?search=${search}`
+      );
+      const data = await res.json();
+
+      res.ok && setPosts(data);
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   useEffect(() => {
@@ -42,16 +59,18 @@ const Feed = () => {
 
   return (
     <section className="feed">
-      <form className="relative w-full flex-cente">
-        <input
-          type="text"
-          value={searchText}
-          onChange={handleSearchChange}
-          required
-          className="search_input peer"
-          placeholder="Search for a tag or username"
-        />
-      </form>
+      {session?.user.id ? (
+        <form className="relative w-full flex-cente">
+          <input
+            type="text"
+            value={searchText}
+            onChange={handleSearchChange}
+            required
+            className="search_input peer"
+            placeholder="Search for a tag or username"
+          />
+        </form>
+      ) : null}
 
       <PromptCardList data={posts} handleTagClick={() => {}} />
     </section>
